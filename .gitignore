@@ -1,5 +1,5 @@
 bin
 target
-resources/email.properties
-resources/responsibles.properties
-.settings
+settings.email.properties
+settings.device.properties
+settings.responsibles.properties
