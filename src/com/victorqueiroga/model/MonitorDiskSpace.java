@@ -3,10 +3,8 @@ package com.victorqueiroga.model;
 import java.io.IOException;
 import java.nio.file.FileStore;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import com.victorqueiroga.utils.Functions;
@@ -25,8 +23,7 @@ public final class MonitorDiskSpace {
 	Properties emailConfig;
 	Properties deviceSettings;
 	List<String> responsibles;
-
-	private Map<String, Long> lastAlerts = new HashMap<>();
+	private Long lastAlert;
 
 	private static MonitorDiskSpace instance;
 
@@ -46,7 +43,10 @@ public final class MonitorDiskSpace {
 	}
 
 	public void monitor() throws IOException {
+
+		String message;
 		while (true) {
+			message = "";
 			Iterator<FileStore> fileStores = Functions.getFileStores();
 			while (fileStores.hasNext()) {
 				FileStore store = fileStores.next();
@@ -67,22 +67,27 @@ public final class MonitorDiskSpace {
 				System.out.println("Uso total: " + usage * 100 + "%");
 
 				if (usage > THRESHOLD_USAGE) {
-					if (shouldSendAlert(store.toString())) {
-						String message = String.format(
-								"Alerta para o dispositivo \"%s\": Foi detectado um alto uso do disco %s (%.2f%% used)",
-								deviceSettings.getProperty("device.name"),
-								store.toString(), usage * 100);
-						System.err.println(message);
-						mailUtils.sendEmail(emailConfig, responsibles, "Alerta de espaço em disco", message);
-						lastAlerts.put(store.toString(), new Date().getTime());
-					} else {
-						System.err.println(
-								"Novos alertas não podem ser emitidos até se passar o tempo necessário de 1 hora.");
-					}
+
+					message += String.format(
+							"- Alerta para o dispositivo \"%s\": Foi detectado um alto uso do disco %s (%.2f%% used)\n" ,
+							deviceSettings.getProperty("device.name"),
+							store.toString(), usage * 100);
+					System.err.println(message);
+
 				} else {
 					System.out.println("Capacidade aceita");
 				}
 			}
+			if (!message.isEmpty()) {
+				if (shouldSendAlert()) {
+					mailUtils.sendEmail(emailConfig, responsibles, "Alerta de espaço em disco", message);
+					lastAlert = new Date().getTime();
+				} else {
+					System.err.println(
+							"Novos alertas não podem ser emitidos até se passar o tempo necessário de 1 hora.");
+				}
+			} 
+
 			System.out.println("Todos os hds verificados.");
 
 			try {
@@ -91,6 +96,7 @@ public final class MonitorDiskSpace {
 				e.printStackTrace();
 			}
 		}
+
 	}
 
 	public void sendTestMail() throws IOException {
@@ -99,8 +105,8 @@ public final class MonitorDiskSpace {
 		mailUtils.sendEmail(emailConfig, responsibles, "Teste de envio", "teste bem sucedido.");
 	}
 
-	private boolean shouldSendAlert(String storeName) {
-		Long lastAlertTime = lastAlerts.get(storeName);
+	private boolean shouldSendAlert() {
+		Long lastAlertTime = lastAlert;
 		long currentTime = new Date().getTime();
 		return lastAlertTime == null || (currentTime - lastAlertTime) >= ALERT_INTERVAL;
 	}

@@ -8,20 +8,7 @@
 
 	<build>
 		<sourceDirectory>src</sourceDirectory>
-		<!-- <resources>
-			
-			<resource>
-				<directory>${project.basedir}</directory>
-				<includes>
-					<include>settings.device.properties</include>
-					<include>settings.email.properties</include>
-					<include>settings.responsibles.properties</include>
-				</includes>
-
-			</resource>
-		</resources> -->
-		<directory>target</directory>
-		<outputDirectory>target/classes</outputDirectory>
+				
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
